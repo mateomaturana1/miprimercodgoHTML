@@ -1,0 +1,144 @@
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <unordered_set>
+
+using namespace std;
+
+const int ROWS = 3;
+const int COLS = 3;
+const int GOAL[ROWS][COLS] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 0}};
+
+struct State {
+    int board[ROWS][COLS];
+    int emptyRow, emptyCol;
+};
+
+bool operator==(const State& a, const State& b) {
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            if (a.board[i][j] != b.board[i][j]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+namespace std {
+    template <>
+    struct hash<State> {
+        size_t operator()(const State& s) const {
+            size_t hash = 0;
+            for (int i = 0; i < ROWS; i++) {
+                for (int j = 0; j < COLS; j++) {
+                    hash = hash * 10 + s.board[i][j];
+                }
+            }
+            return hash;
+        }
+    };
+}
+
+bool isValid(int row, int col) {
+    return (row >= 0 && row < ROWS && col >= 0 && col < COLS);
+}
+
+void printState(const State& s) {
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            cout << s.board[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+bool isGoalState(const State& s) {
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            if (s.board[i][j] != GOAL[i][j]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+vector<State> getSuccessors(const State& s) {
+    vector<State> successors;
+    int row = s.emptyRow;
+    int col = s.emptyCol;
+
+    const int dr[] = {-1, 1, 0, 0};
+    const int dc[] = {0, 0, -1, 1};
+
+    for (int i = 0; i < 4; i++) {
+        int newRow = row + dr[i];
+        int newCol = col + dc[i];
+
+        if (isValid(newRow, newCol)) {
+            State successor = s;
+            successor.emptyRow = newRow;
+            successor.emptyCol = newCol;
+            swap(successor.board[row][col], successor.board[newRow][newCol]);
+            successors.push_back(successor);
+        }
+    }
+
+    return successors;
+}
+
+bool solvePuzzle(State& initialState) {
+    stack<State> stateStack;
+    unordered_set<State> visitedStates;
+
+    stateStack.push(initialState);
+    visitedStates.insert(initialState);
+
+    while (!stateStack.empty()) {
+        State currentState = stateStack.top();
+        stateStack.pop();
+
+        if (isGoalState(currentState)) {
+            cout << "Solución encontrada:" << endl;
+            printState(currentState);
+            return true;
+        }
+
+        vector<State> successors = getSuccessors(currentState);
+
+        for (const State& successor : successors) {
+            if (visitedStates.find(successor) == visitedStates.end()) {
+                stateStack.push(successor);
+                visitedStates.insert(successor);
+            }
+        }
+    }
+
+    cout << "No se encontró solución." << endl;
+    return false;
+}
+
+int main() {
+    State initialState;
+    int num = 1;
+
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            initialState.board[i][j] = num;
+            num = (num % 9) + 1;
+        }
+    }
+
+    initialState.emptyRow = 2;
+    initialState.emptyCol = 2;
+    initialState.board[2][2] = 0;
+
+    if (solvePuzzle(initialState)) {
+        cout << "El rompecabezas se ha resuelto." << endl;
+    } else {
+        cout << "No se encontró una solución." << endl;
+    }
+
+    return 0;
+}
